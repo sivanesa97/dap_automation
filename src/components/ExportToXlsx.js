@@ -37,10 +37,10 @@ export const exportToXLSX = (data, headers, filename, sheetName, columnWidths, t
         } else {
           mappedRow[headers[key]] = item[key] || ''
         }
-        if(key=="existingStatus"&& item[key]==1){
-          mappedRow[headers[key]] = "Yes"
-        }else if(key=="existingStatus"&& item[key]==0){
-          mappedRow[headers[key]] = "No"
+        if (key == 'existingStatus' && item[key] == 1) {
+          mappedRow[headers[key]] = 'Yes'
+        } else if (key == 'existingStatus' && item[key] == 0) {
+          mappedRow[headers[key]] = 'No'
         }
       })
     } else if (type === 2) {
@@ -56,10 +56,24 @@ export const exportToXLSX = (data, headers, filename, sheetName, columnWidths, t
         } else {
           mappedRow[headers[key]] = item[key] || ''
         }
-        if(key=="existingStatus"&& item[key]==1){
-          mappedRow[headers[key]] = "Yes"
-        }else if(key=="existingStatus"&& item[key]==0){
-          mappedRow[headers[key]] = "No"
+        if (key == 'existingStatus' && item[key] == 1) {
+          mappedRow[headers[key]] = 'Yes'
+        } else if (key == 'existingStatus' && item[key] == 0) {
+          mappedRow[headers[key]] = 'No'
+        }
+      })
+    } else if (type == 3) {
+      Object.keys(headers).forEach(key => {
+        if (key == 'checkStatus' && item[key] == 1) {
+          mappedRow[headers[key]] = 'Processed'
+        } else if (key == 'checkStatus' && item[key] == 0) {
+          mappedRow[headers[key]] = 'Pending'
+        } else if (key == 'status' && item[key] == 0) {
+          mappedRow[headers[key]] = 'Not Matched'
+        } else if (key == 'status' && item[key] == 1) {
+          mappedRow[headers[key]] = 'Matched'
+        } else {
+          mappedRow[headers[key]] = item[key] || ''
         }
       })
     }
@@ -89,14 +103,29 @@ export const exportToXLSX = (data, headers, filename, sheetName, columnWidths, t
   data.map((item, ind) => {
     var status = 0
     if (type === 1) {
-      if (item['verificationStatus'] == 1 && (item['newDataCheckStatus'] == 0 || item['newDataCheckStatus'] == 2)) {
+      if (
+        item['verificationStatus'] == 1 &&
+        item['additionalStatus'] == 0 &&
+        (item['newDataCheckStatus'] == 0 || item['newDataCheckStatus'] == 2)
+      ) {
         status = 2
-      } else if (item['verificationStatus'] == 1 && item['newDataCheckStatus'] == 1) {
+      } else if (
+        item['verificationStatus'] == 1 &&
+        (item['newDataCheckStatus'] == 1 || item['additionalStatus'] == 1)
+      ) {
+        status = 1
+      } else if (item['verificationStatus'] == 0 && item['newDataCheckStatus'] == 2) {
         status = 1
       }
     } else if (type === 2) {
       if (item['metricStatus'] == 1) {
         status = 1
+      }
+    } else if (type == 3) {
+      if (item['status'] == 1) {
+        status = 1
+      } else if (item['status'] == 0 && item['checkStatus'] == 0) {
+        status = 2
       }
     }
     if (type == 2) {
@@ -115,15 +144,32 @@ export const exportToXLSX = (data, headers, filename, sheetName, columnWidths, t
     } else if (type == 1) {
       Object.keys(headers).forEach((key, index) => {
         const cellRef = XLSX.utils.encode_cell({ r: ind + 1, c: index })
-        if (status == 1) {
+        if (status == 1 && (headers[key] == 'DAP Value' || headers[key] == 'Match Status')) {
           worksheet[cellRef].s = {
             fill: { fgColor: { rgb: 'FFFFFF00' } }
           }
-        } else if (status == 2) {
+        } else if (status == 2 && (headers[key] == 'DAP Value' || headers[key] == 'Match Status')) {
           worksheet[cellRef].s = {
             fill: { fgColor: { rgb: 'FF0EFEA3' } }
           }
-        } else {
+        } else if (headers[key] == 'DAP Value' || headers[key] == 'Match Status') {
+          worksheet[cellRef].s = {
+            fill: { fgColor: { rgb: 'FFFF7456' } }
+          }
+        }
+      })
+    } else if (type == 3) {
+      Object.keys(headers).forEach((key, index) => {
+        const cellRef = XLSX.utils.encode_cell({ r: ind + 1, c: index })
+        if (status == 1 && (headers[key] == 'DAP Value' || headers[key] == 'Status')) {
+          worksheet[cellRef].s = {
+            fill: { fgColor: { rgb: 'FF0EFEA3' } }
+          }
+        } else if (status == 2 && (headers[key] == 'DAP Value' || headers[key] == 'Status')) {
+          worksheet[cellRef].s = {
+            fill: { fgColor: { rgb: 'FFFFFF00' } }
+          }
+        } else if (headers[key] == 'DAP Value' || headers[key] == 'Status') {
           worksheet[cellRef].s = {
             fill: { fgColor: { rgb: 'FFFF7456' } }
           }

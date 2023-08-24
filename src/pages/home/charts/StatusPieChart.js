@@ -27,7 +27,7 @@ const StatusPieChart = ({ chartData }) => {
       position: 'bottom'
     },
     stroke: { width: 0 },
-    labels: ['Matched', 'Matched From Red List', 'Not Matched', 'New Data Matched', 'New Data Not Matched'],
+    labels: ['Matched', 'Matched From Red List', 'Not Matched', 'Not Matched - New Data Matched', 'Matched - New Data Not Matched'],
     colors: [donutColors.series1, donutColors.series2, donutColors.series3, donutColors.series4, donutColors.series5],
     dataLabels: {
       enabled: true,

@@ -21,6 +21,11 @@ const navigation = () => {
       icon: DescriptionOutlined,
       path:'/input/report'
     },
+    {
+      title: 'DAP Report',
+      icon: UploadOutlined,
+      path:'/input/new-data-check'
+    },
     // {
     //   title: 'Masters',
     //   icon: PostAddRounded,
