@@ -67,6 +67,7 @@ const InputUpload = () => {
       case 'sno':
       case 'newDataCheckStatus':
       case 'verificationStatus':
+      case 'existingStatus':
         return (a, b) => {
           return a[sortColumn] - b[sortColumn]
         }

@@ -76,6 +76,7 @@ const InputUpload = () => {
         }
       case 'sno':
       case 'metricStatus':
+      case 'existingStatus':
       case 'retryCount':
         return (a, b) => {
           return a[sortColumn] - b[sortColumn]

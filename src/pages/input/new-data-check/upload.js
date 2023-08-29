@@ -138,8 +138,9 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
               rowData.dapValue = row.getCell(dapValueColumn).value
               const cellBackgroundColor = row.getCell(dapValueColumn).style.fill.fgColor.argb
               if (cellBackgroundColor != null) {
+                set.add(cellBackgroundColor)
                 rowData.cellBackgroundColor = cellBackgroundColor
-                if (cellBackgroundColor == 'FFFFEA3C') {
+                if (cellBackgroundColor.toUpperCase() == 'FFFFEA3C') {
                   rowData.filterStatus = 1
                   totalWorkableCount++
                   finalData.push(rowData)
@@ -154,6 +155,7 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
         console.log(finalData)
         finalData.sort((a, b) => b.filterStatus - a.filterStatus)
         setExcelData(finalData)
+        console.log(set)
         setIsLoading(false)
       }
       reader.readAsBinaryString(file)
