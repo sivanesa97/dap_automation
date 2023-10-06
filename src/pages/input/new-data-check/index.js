@@ -70,6 +70,9 @@ const NewDataCheckUpload = () => {
       case 'attributeName':
       case 'category':
       case 'comments':
+      case 'recommendedValue':
+      case 'mtmCtoType':
+      case 'type':
         return (a, b) => {
           return a[sortColumn].localeCompare(b[sortColumn])
         }
@@ -141,9 +144,12 @@ const NewDataCheckUpload = () => {
     date: 'Date',
     dapCode: 'DAP Code',
     category: 'Category',
+    type: 'Type',
+    mtmCtoType: 'MTM/CTO',
     sku: 'SKU',
     attributeName: 'Attribute Name',
     dapValue: 'DAP Value',
+    recommendedValue: 'Recommended Value',
     status: 'Status',
     comments: 'Comments'
   }
@@ -184,6 +190,21 @@ const NewDataCheckUpload = () => {
       minWidth: 80,
       key: 'dapValue',
       name: 'DAP Value'
+    },
+    {
+      minWidth: 80,
+      key: 'recommendedValue',
+      name: 'Recommended Value'
+    },
+    {
+      minWidth: 80,
+      key: 'mtmCtoType',
+      name: 'MTM/CTO'
+    },
+    {
+      minWidth: 80,
+      key: 'type',
+      name: 'Type'
     },
     {
       minWidth: 80,

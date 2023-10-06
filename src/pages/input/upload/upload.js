@@ -104,9 +104,11 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
               row.buyUrl = e[f]
             } else if (cleanAndLowercase(f) == 'type') {
               if (e[f].toLowerCase().indexOf('notebook') > -1) {
-                row.category = 'Laptop'
+                row.category = 'Laptops'
+              } else if (e[f].toLowerCase().indexOf('laptop') > -1) {
+                row.category = 'Laptops'
               } else if (e[f].toLowerCase().startsWith('desktop')) {
-                row.category = 'Desktop'
+                row.category = 'Desktops'
               } else {
                 row.category = e[f]
               }
@@ -140,6 +142,7 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
           setDateDisabledStatus(true)
           finalData.push(row)
         })
+        console.log(finalData)
         finalData.sort((a, b) => a.status.localeCompare(b.status))
         finalData.sort((a, b) => b.filterStatus - a.filterStatus)
         var tempWorkableCount = 0

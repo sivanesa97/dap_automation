@@ -98,7 +98,7 @@ export const exportToXLSX = (data, headers, filename, sheetName, columnWidths, t
 
   Object.keys(headers).forEach((key, index) => {
     const cellRef = XLSX.utils.encode_cell({ r: 0, c: index })
-    worksheet[cellRef].s = headerStyle
+    worksheet[cellRef]["s"] = headerStyle
   })
   data.map((item, ind) => {
     var status = 0
@@ -185,10 +185,8 @@ export const exportToXLSX = (data, headers, filename, sheetName, columnWidths, t
 
   const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
   if (window.navigator.msSaveOrOpenBlob) {
-    // For IE
     window.navigator.msSaveOrOpenBlob(blob, exportFileName)
   } else {
-    // For modern browsers
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

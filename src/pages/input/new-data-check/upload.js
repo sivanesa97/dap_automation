@@ -47,13 +47,19 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
   const [excelData, setExcelData] = useState([])
   const [state, setState] = useState([])
   const [date, setDate] = useState(moment(curdate).format().slice(0, 10))
+  const [inputType, setInputType] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [countries, setCountries] = useState([])
 
   useEffect(() => {
     loadState()
   }, [])
 
-  const loadState = () => {}
+  const loadState = async () => {
+    await axios.get(AUTH_URL + 'getAllCountries').then(res => {
+      setCountries(res.data.filter(e => e.isActive == 1))
+    })
+  }
 
   const cleanAndLowercase = value => {
     if (typeof value === 'string') {
@@ -63,7 +69,20 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
     return value
   }
 
+  function extractContent(s) {
+    var span = document.createElement('span')
+    span.innerHTML = s
+
+    return span.textContent || span.innerText
+  }
+
   const handleChange = e => {
+    if (inputType == '') {
+      alert('Please choose input type and upload!')
+      e.target.value = ''
+
+      return
+    }
     if (e.target.type === 'file' && e.target.files != null && e.target.files.length > 0) {
       setShowPreviewPage(false)
       setIsLoading(true)
@@ -81,6 +100,8 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
         filterStatus: 0,
         cellBackgroundColor: '',
         checkStatus: 0,
+        mtmCtoType: '',
+        type: '',
         isActive: 1,
         comments: '',
         status: 0
@@ -90,73 +111,181 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
         var data = evt.target.result
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.load(data)
+        if (inputType == '1') {
+          const worksheet = workbook.getWorksheet(1)
+          var totalWorkableCount = 0
+          var set = new Set()
+          var totalNonWorkableCount = 0
+          var totalCount = 0
+          var countryColumn = -1
+          var categoryColumn = -1
+          var skuColumn = -1
+          var attributeNameColumn = -1
+          var dapValueColumn = -1
+          var typeColumn = -1
+          var finalData = []
+          worksheet.eachRow((row, rowIndex) => {
+            if (rowIndex === 1) {
+              row.eachCell((cell, cellIndex) => {
+                var f = cell.text
+                if (cleanAndLowercase(f) == 'country') {
+                  countryColumn = cellIndex
+                } else if (cleanAndLowercase(f) == 'category') {
+                  categoryColumn = cellIndex
+                } else if (cleanAndLowercase(f) == 'part' || cleanAndLowercase(f) == 'partno') {
+                  skuColumn = cellIndex
+                } else if (cleanAndLowercase(f) == 'attributename') {
+                  attributeNameColumn = cellIndex
+                } else if (cleanAndLowercase(f) == 'dapvalue') {
+                  dapValueColumn = cellIndex
+                } else if (cleanAndLowercase(f) == 'element') {
+                  typeColumn = cellIndex
+                }
+              })
 
-        const worksheet = workbook.getWorksheet(1)
-        var totalWorkableCount = 0
-        var set = new Set()
-        var totalNonWorkableCount = 0
-        var totalCount = 0
-        var countryColumn = -1
-        var categoryColumn = -1
-        var skuColumn = -1
-        var attributeNameColumn = -1
-        var dapValueColumn = -1
-        var finalData = []
-        worksheet.eachRow((row, rowIndex) => {
-          if (rowIndex === 1) {
-            row.eachCell((cell, cellIndex) => {
-              var f = cell.text
-              if (cleanAndLowercase(f) == 'country') {
-                countryColumn = cellIndex
-              } else if (cleanAndLowercase(f) == 'category') {
-                categoryColumn = cellIndex
-              } else if (cleanAndLowercase(f) == 'part') {
-                skuColumn = cellIndex
-              } else if (cleanAndLowercase(f) == 'attributename') {
-                attributeNameColumn = cellIndex
-              } else if (cleanAndLowercase(f) == 'dapvalue') {
-                dapValueColumn = cellIndex
-              }
-            })
+              return
+            } else if (rowIndex > 1) {
+              var rowData = { ...rowTemplate }
+              if (countryColumn > 0) {
+                var tempDapCountry = row.getCell(countryColumn).value
 
-            return
-          } else if (rowIndex > 1) {
-            var rowData = { ...rowTemplate }
-            if (countryColumn > 0) {
-              rowData.dapCode = row.getCell(countryColumn).value
-            }
-            if (categoryColumn > 0) {
-              rowData.category = row.getCell(categoryColumn).value
-            }
-            if (attributeNameColumn > 0) {
-              rowData.attributeName = row.getCell(attributeNameColumn).value
-            }
-            if (skuColumn > 0) {
-              rowData.sku = row.getCell(skuColumn).value
-            }
-            if (dapValueColumn > 0) {
-              rowData.dapValue = row.getCell(dapValueColumn).value
-              const cellBackgroundColor = row.getCell(dapValueColumn).style.fill.fgColor.argb
-              if (cellBackgroundColor != null) {
-                set.add(cellBackgroundColor)
-                rowData.cellBackgroundColor = cellBackgroundColor
-                if (cellBackgroundColor.toUpperCase() == 'FFFFEA3C') {
-                  rowData.filterStatus = 1
-                  totalWorkableCount++
-                  finalData.push(rowData)
+                var tempCountries = [...countries]
+                
+                var countryObj = tempCountries.filter(
+                  e => cleanAndLowercase(e.countryName) == cleanAndLowercase(tempDapCountry)
+                )
+                if (countryObj != null && countryObj.length > 0) {
+                  rowData.dapCode = countryObj[0].dapCode
                 }
               }
+              if (categoryColumn > 0) {
+                rowData.category = row.getCell(categoryColumn).value
+              }
+              if (attributeNameColumn > 0) {
+                rowData.attributeName = row.getCell(attributeNameColumn).value
+              }
+              if (skuColumn > 0) {
+                rowData.sku = row.getCell(skuColumn).value
+                if (row.getCell(skuColumn).value.includes('CTO')) {
+                  rowData.mtmCtoType = 'CTO'
+                } else {
+                  rowData.mtmCtoType = 'MTM'
+                }
+              }
+              if (typeColumn > 0) {
+                rowData.type = row.getCell(typeColumn).value
+                if (rowData.type.endsWith('s')) {
+                  rowData.type = rowData.type.substring(0, rowData.type.length - 1)
+                }
+              } else {
+                rowData.type = 'Spec'
+              }
+              if (dapValueColumn > 0) {
+                rowData.dapValue = extractContent(row.getCell(dapValueColumn).value)
+                rowData.filterStatus = 1
+                totalWorkableCount++
+                finalData.push(rowData)
+              }
+              totalCount++
             }
-            totalCount++
-          }
-        })
-        totalNonWorkableCount = totalCount - totalWorkableCount
-        setCount({ nonWorkable: totalNonWorkableCount, workable: totalWorkableCount })
-        console.log(finalData)
-        finalData.sort((a, b) => b.filterStatus - a.filterStatus)
-        setExcelData(finalData)
-        console.log(set)
-        setIsLoading(false)
+          })
+          totalNonWorkableCount = totalCount - totalWorkableCount
+          setCount({ nonWorkable: totalNonWorkableCount, workable: totalWorkableCount })
+          console.log(finalData)
+          finalData.sort((a, b) => b.filterStatus - a.filterStatus)
+          setExcelData(finalData)
+          console.log(set)
+          setIsLoading(false)
+        } else if (inputType == '2') {
+          var totalWorkableCount = 0
+          var set = new Set()
+          var totalNonWorkableCount = 0
+          var totalCount = 0
+          var finalData = []
+          workbook.eachSheet((worksheet, id) => {
+            if (
+              cleanAndLowercase(worksheet.name) == 'spec' ||
+              cleanAndLowercase(worksheet.name) == 'facet' ||
+              cleanAndLowercase(worksheet.name) == 'facets'
+            ) {
+              var type = 'Spec'
+              if (cleanAndLowercase(worksheet.name) == 'spec') {
+                type = 'Spec'
+              } else if (
+                cleanAndLowercase(worksheet.name) == 'facet' ||
+                cleanAndLowercase(worksheet.name) == 'facets'
+              ) {
+                type = 'Facet'
+              }
+              var countryColumn = -1
+              var categoryColumn = -1
+              var skuColumn = -1
+              var attributeNameColumn = -1
+              var dapValueColumn = -1
+              worksheet.eachRow((row, rowIndex) => {
+                if (rowIndex === 1) {
+                  row.eachCell((cell, cellIndex) => {
+                    var f = cell.text
+                    if (cleanAndLowercase(f) == 'country') {
+                      countryColumn = cellIndex
+                    } else if (cleanAndLowercase(f) == 'category') {
+                      categoryColumn = cellIndex
+                    } else if (cleanAndLowercase(f) == 'part') {
+                      skuColumn = cellIndex
+                    } else if (cleanAndLowercase(f) == 'attributename') {
+                      attributeNameColumn = cellIndex
+                    } else if (cleanAndLowercase(f) == 'dapvalue') {
+                      dapValueColumn = cellIndex
+                    }
+                  })
+
+                  return
+                } else if (rowIndex > 1) {
+                  var rowData = { ...rowTemplate }
+                  if (countryColumn > 0) {
+                    rowData.dapCode = row.getCell(countryColumn).value
+                  }
+                  if (categoryColumn > 0) {
+                    rowData.category = row.getCell(categoryColumn).value
+                  }
+                  if (attributeNameColumn > 0) {
+                    rowData.attributeName = row.getCell(attributeNameColumn).value
+                  }
+                  if (skuColumn > 0) {
+                    rowData.sku = row.getCell(skuColumn).value
+                    if (row.getCell(skuColumn).value.includes('CTO')) {
+                      rowData.mtmCtoType = 'CTO'
+                    } else {
+                      rowData.mtmCtoType = 'MTM'
+                    }
+                  }
+                  rowData.type = type
+                  if (dapValueColumn > 0) {
+                    rowData.dapValue = extractContent(row.getCell(dapValueColumn).value)
+                    const cellBackgroundColor = row.getCell(dapValueColumn).style.fill.fgColor.argb
+                    if (cellBackgroundColor != null) {
+                      set.add(cellBackgroundColor)
+                      rowData.cellBackgroundColor = cellBackgroundColor
+                      if (cellBackgroundColor.toUpperCase() == 'FFFFEA3C') {
+                        rowData.filterStatus = 1
+                        totalWorkableCount++
+                        finalData.push(rowData)
+                      }
+                    }
+                  }
+                  totalCount++
+                }
+              })
+            }
+          })
+          totalNonWorkableCount = totalCount - totalWorkableCount
+          setCount({ nonWorkable: totalNonWorkableCount, workable: totalWorkableCount })
+          console.log(finalData)
+          finalData.sort((a, b) => b.filterStatus - a.filterStatus)
+          setExcelData(finalData)
+          console.log(set)
+          setIsLoading(false)
+        }
       }
       reader.readAsBinaryString(file)
     }
@@ -225,6 +354,20 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
                   name='date'
                   type='date'
                 />
+                <TextField
+                  value={inputType}
+                  label='Input Type'
+                  style={{ height: '50px' }}
+                  sx={{ marginRight: 5 }}
+                  onChange={e => {
+                    setInputType(e.target.value)
+                  }}
+                  name='inputType'
+                  select
+                >
+                  <MenuItem value={'1'}>Daily</MenuItem>
+                  <MenuItem value={'2'}>Weekly</MenuItem>
+                </TextField>
                 <label
                   htmlFor='file'
                   style={{ height: '50px', marginBottom: '0', display: 'flex', alignItems: 'center' }}
@@ -277,6 +420,8 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
                       <TableCell>SKU</TableCell>
                       <TableCell>Attribute Name</TableCell>
                       <TableCell>DAP Value</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>MTM/CTO</TableCell>
                     </TableRow>
                   </TableHead>
                 )}
@@ -291,6 +436,8 @@ const UploadExcel = ({ open, handleDialogToggle, setOpen, categories }) => {
                         <TableCell key={index}>{row.sku || ''}</TableCell>
                         <TableCell key={index}>{row.attributeName || ''}</TableCell>
                         <TableCell key={index}>{row.dapValue || ''}</TableCell>
+                        <TableCell key={index}>{row.type || ''}</TableCell>
+                        <TableCell key={index}>{row.mtmCtoType || ''}</TableCell>
                       </TableRow>
                     ))}
                 </TableBody>
